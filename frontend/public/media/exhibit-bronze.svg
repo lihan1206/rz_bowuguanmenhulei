@@ -1,0 +1,14 @@
+<svg width="800" height="600" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#083344"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" rx="36" fill="url(#g1)"/>
+  <circle cx="180" cy="140" r="120" fill="rgba(255,255,255,0.08)"/>
+  <path d="M300 190h200l50 250H250l50-250Z" fill="#f6e7c9" opacity="0.88"/>
+  <path d="M320 190V140h40v50M440 190V140h40v50" stroke="#f6e7c9" stroke-width="18" stroke-linecap="round"/>
+  <text x="64" y="520" fill="#fef3c7" font-size="46" font-family="PingFang SC, Microsoft YaHei">青铜礼器</text>
+</svg>
+

@@ -1,0 +1,13 @@
+<svg width="800" height="600" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" rx="36" fill="url(#g3)"/>
+  <path d="M350 150h100c-10 50-20 86-20 126 0 42 14 94 34 166H336c20-72 34-124 34-166 0-40-10-76-20-126Z" fill="#dbeafe"/>
+  <path d="M450 190c58 0 84 28 84 78 0 40-20 58-50 58" fill="none" stroke="#dbeafe" stroke-width="18" stroke-linecap="round"/>
+  <text x="64" y="520" fill="#dbeafe" font-size="46" font-family="PingFang SC, Microsoft YaHei">海贸陶瓷</text>
+</svg>
+

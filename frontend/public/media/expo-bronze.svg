@@ -1,0 +1,13 @@
+<svg width="800" height="1000" viewBox="0 0 800 1000" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g5" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#451a03"/>
+      <stop offset="100%" stop-color="#115e59"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="1000" rx="40" fill="url(#g5)"/>
+  <path d="M250 220h300l70 350H180l70-350Z" fill="#fde68a" opacity="0.9"/>
+  <text x="70" y="760" fill="#fef3c7" font-size="68" font-family="PingFang SC, Microsoft YaHei">青铜礼乐</text>
+  <text x="70" y="840" fill="#fef9c3" font-size="34" font-family="PingFang SC, Microsoft YaHei">礼制、工艺与王朝秩序</text>
+</svg>
+
