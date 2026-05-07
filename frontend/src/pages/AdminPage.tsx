@@ -13,6 +13,7 @@ import type {
   ExhibitionItem,
   VisitItem,
 } from "../api/types";
+import { exhibitionStatusOptions, formatDate, statusColor, visitStatusColor } from "../utils/museum";
 
 const exhibitSchema = z.object({
   name: z.string().min(2).max(120),
@@ -29,7 +30,7 @@ const exhibitionSchema = z.object({
   location: z.string().min(2).max(80),
   start_date: z.any(),
   end_date: z.any(),
-  status: z.enum(["展出中", "即将开展", "已结束"]),
+  status: z.enum(exhibitionStatusOptions),
   summary: z.string().min(10).max(4000),
   poster_url: z.string().min(5).max(255),
 });
@@ -74,7 +75,7 @@ export function AdminPage() {
   async function loadAll() {
     setBusy(true);
     try {
-      const [ov, exs, expos, notes, g, v, c] = await Promise.all([
+      const [ov, exs, expos, notes, guide, visitRows, commentRows] = await Promise.all([
         api.adminOverview(),
         api.adminExhibits(),
         api.adminExhibitions(),
@@ -87,9 +88,9 @@ export function AdminPage() {
       setExhibits(exs);
       setExhibitions(expos);
       setAnnouncements(notes);
-      setVisits(v);
-      setComments(c);
-      guideForm.setFieldsValue(g);
+      setVisits(visitRows);
+      setComments(commentRows);
+      guideForm.setFieldsValue(guide);
     } catch (error) {
       message.error(pickErrorMsg(error));
     } finally {
@@ -106,7 +107,7 @@ export function AdminPage() {
       title,
       content,
       okText: "确认删除",
-      cancelText: "先保留",
+      cancelText: "取消",
       okButtonProps: { danger: true },
       onOk: action,
     });
@@ -185,25 +186,39 @@ export function AdminPage() {
   return (
     <div className="page-wrap">
       <div className="page-banner">
-        <Typography.Title level={2}>后台管理</Typography.Title>
-        <Typography.Paragraph>统一维护展品、展览、公告、指南、预约与评论。删除操作全部带确认提示，避免误删。</Typography.Paragraph>
+        <div className="banner-copy">
+          <Typography.Title level={2}>后台管理中心</Typography.Title>
+          <Typography.Paragraph>
+            统一维护展品、展览、公告、参观指南、预约与评论。所有删除操作都会弹出确认弹窗，避免误删。
+          </Typography.Paragraph>
+        </div>
       </div>
 
       <Row gutter={[16, 16]} className="stats-row">
         <Col xs={12} lg={4}>
-          <Card className="soft-card"><Statistic title="用户数" value={overview?.user_total ?? 0} loading={busy} /></Card>
+          <Card className="soft-card">
+            <Statistic title="用户总数" value={overview?.user_total ?? 0} loading={busy} />
+          </Card>
         </Col>
         <Col xs={12} lg={4}>
-          <Card className="soft-card"><Statistic title="展品数" value={overview?.exhibit_total ?? 0} loading={busy} /></Card>
+          <Card className="soft-card">
+            <Statistic title="展品总数" value={overview?.exhibit_total ?? 0} loading={busy} />
+          </Card>
         </Col>
         <Col xs={12} lg={4}>
-          <Card className="soft-card"><Statistic title="展览数" value={overview?.exhibition_total ?? 0} loading={busy} /></Card>
+          <Card className="soft-card">
+            <Statistic title="展览总数" value={overview?.exhibition_total ?? 0} loading={busy} />
+          </Card>
         </Col>
         <Col xs={12} lg={4}>
-          <Card className="soft-card"><Statistic title="预约数" value={overview?.visit_total ?? 0} loading={busy} /></Card>
+          <Card className="soft-card">
+            <Statistic title="预约总数" value={overview?.visit_total ?? 0} loading={busy} />
+          </Card>
         </Col>
         <Col xs={12} lg={4}>
-          <Card className="soft-card"><Statistic title="评论数" value={overview?.comment_total ?? 0} loading={busy} /></Card>
+          <Card className="soft-card">
+            <Statistic title="评论总数" value={overview?.comment_total ?? 0} loading={busy} />
+          </Card>
         </Col>
       </Row>
 
@@ -215,7 +230,14 @@ export function AdminPage() {
             children: (
               <Card className="soft-card">
                 <Space className="toolbar">
-                  <Button type="primary" onClick={() => { setExhibitOpen(true); setExhibitEditId(null); exhibitForm.resetFields(); }}>
+                  <Button
+                    type="primary"
+                    onClick={() => {
+                      setExhibitOpen(true);
+                      setExhibitEditId(null);
+                      exhibitForm.resetFields();
+                    }}
+                  >
                     新增展品
                   </Button>
                 </Space>
@@ -245,7 +267,7 @@ export function AdminPage() {
                           <Button
                             danger
                             onClick={() =>
-                              confirmDelete("确认删除该展品吗？", "删除后相关评论也会一并清除。", async () => {
+                              confirmDelete("确认删除该展品吗？", "删除后相关评论也会一并清理。", async () => {
                                 await api.adminDeleteExhibit(row.id);
                                 message.success("展品已删除");
                                 await loadAll();
@@ -268,7 +290,14 @@ export function AdminPage() {
             children: (
               <Card className="soft-card">
                 <Space className="toolbar">
-                  <Button type="primary" onClick={() => { setExhibitionOpen(true); setExhibitionEditId(null); exhibitionForm.resetFields(); }}>
+                  <Button
+                    type="primary"
+                    onClick={() => {
+                      setExhibitionOpen(true);
+                      setExhibitionEditId(null);
+                      exhibitionForm.resetFields();
+                    }}
+                  >
                     新增展览
                   </Button>
                 </Space>
@@ -279,7 +308,11 @@ export function AdminPage() {
                   columns={[
                     { title: "标题", dataIndex: "title" },
                     { title: "地点", dataIndex: "location" },
-                    { title: "状态", dataIndex: "status", render: (value: string) => <Tag>{value}</Tag> },
+                    {
+                      title: "状态",
+                      dataIndex: "status",
+                      render: (value: string) => <Tag color={statusColor(value)}>{value}</Tag>,
+                    },
                     { title: "开始日期", dataIndex: "start_date" },
                     { title: "结束日期", dataIndex: "end_date" },
                     {
@@ -302,7 +335,7 @@ export function AdminPage() {
                           <Button
                             danger
                             onClick={() =>
-                              confirmDelete("确认删除该展览吗？", "删除后前台将不再展示该展览。", async () => {
+                              confirmDelete("确认删除该展览吗？", "删除后前台将不再展示这条展览。", async () => {
                                 await api.adminDeleteExhibition(row.id);
                                 message.success("展览已删除");
                                 await loadAll();
@@ -325,7 +358,14 @@ export function AdminPage() {
             children: (
               <Card className="soft-card">
                 <Space className="toolbar">
-                  <Button type="primary" onClick={() => { setAnnouncementOpen(true); setAnnouncementEditId(null); announcementForm.resetFields(); }}>
+                  <Button
+                    type="primary"
+                    onClick={() => {
+                      setAnnouncementOpen(true);
+                      setAnnouncementEditId(null);
+                      announcementForm.resetFields();
+                    }}
+                  >
                     新增公告
                   </Button>
                 </Space>
@@ -336,7 +376,11 @@ export function AdminPage() {
                   columns={[
                     { title: "标题", dataIndex: "title" },
                     { title: "内容", dataIndex: "content", ellipsis: true },
-                    { title: "置顶", dataIndex: "pinned", render: (value: boolean) => (value ? "是" : "否") },
+                    {
+                      title: "置顶",
+                      dataIndex: "pinned",
+                      render: (value: boolean) => <Tag color={value ? "red" : "default"}>{value ? "是" : "否"}</Tag>,
+                    },
                     {
                       title: "操作",
                       render: (_, row) => (
@@ -353,7 +397,7 @@ export function AdminPage() {
                           <Button
                             danger
                             onClick={() =>
-                              confirmDelete("确认删除该公告吗？", "删除后首页公告区会立即同步更新。", async () => {
+                              confirmDelete("确认删除该公告吗？", "删除后首页公告区会立即更新。", async () => {
                                 await api.adminDeleteAnnouncement(row.id);
                                 message.success("公告已删除");
                                 await loadAll();
@@ -376,13 +420,27 @@ export function AdminPage() {
             children: (
               <Card className="soft-card">
                 <Form form={guideForm} layout="vertical">
-                  <Form.Item label="开放时间" name="open_hours"><Input /></Form.Item>
-                  <Form.Item label="馆址" name="address"><Input /></Form.Item>
-                  <Form.Item label="交通方式" name="traffic_guide"><Input.TextArea rows={4} /></Form.Item>
-                  <Form.Item label="票务说明" name="ticket_info"><Input.TextArea rows={4} /></Form.Item>
-                  <Form.Item label="地图链接" name="map_link"><Input /></Form.Item>
-                  <Form.Item label="参观须知" name="visit_tips"><Input.TextArea rows={5} /></Form.Item>
-                  <Button type="primary" onClick={saveGuide}>保存参观指南</Button>
+                  <Form.Item label="开放时间" name="open_hours">
+                    <Input />
+                  </Form.Item>
+                  <Form.Item label="馆址" name="address">
+                    <Input />
+                  </Form.Item>
+                  <Form.Item label="交通方式" name="traffic_guide">
+                    <Input.TextArea rows={4} />
+                  </Form.Item>
+                  <Form.Item label="票务说明" name="ticket_info">
+                    <Input.TextArea rows={4} />
+                  </Form.Item>
+                  <Form.Item label="地图链接" name="map_link">
+                    <Input />
+                  </Form.Item>
+                  <Form.Item label="参观提示" name="visit_tips">
+                    <Input.TextArea rows={5} />
+                  </Form.Item>
+                  <Button type="primary" onClick={saveGuide}>
+                    保存参观指南
+                  </Button>
                 </Form>
               </Card>
             ),
@@ -401,14 +459,18 @@ export function AdminPage() {
                     { title: "电话", dataIndex: "phone" },
                     { title: "到馆日期", dataIndex: "visit_date" },
                     { title: "人数", dataIndex: "party_size" },
-                    { title: "状态", dataIndex: "status" },
+                    {
+                      title: "状态",
+                      dataIndex: "status",
+                      render: (value: string) => <Tag color={visitStatusColor(value)}>{value}</Tag>,
+                    },
                     {
                       title: "操作",
                       render: (_, row) => (
                         <Button
                           danger
                           onClick={() =>
-                            confirmDelete("确认删除该预约记录吗？", "删除后用户侧将同步看不到这条预约。", async () => {
+                            confirmDelete("确认删除该预约记录吗？", "删除后用户端将同步看不到这条记录。", async () => {
                               await api.adminDeleteVisit(row.id);
                               message.success("预约记录已删除");
                               await loadAll();
@@ -437,14 +499,19 @@ export function AdminPage() {
                     { title: "评论内容", dataIndex: "content", ellipsis: true },
                     { title: "展品 ID", dataIndex: "exhibit_id" },
                     { title: "用户 ID", dataIndex: "user_id" },
-                    { title: "发布时间", dataIndex: "created_at" },
+                    {
+                      title: "状态",
+                      dataIndex: "status",
+                      render: (value: string) => <Tag color={statusColor(value)}>{value}</Tag>,
+                    },
+                    { title: "发布时间", dataIndex: "created_at", render: (value: string) => formatDate(value, "YYYY-MM-DD HH:mm") },
                     {
                       title: "操作",
                       render: (_, row) => (
                         <Button
                           danger
                           onClick={() =>
-                            confirmDelete("确认删除该评论吗？", "删除后前台详情页将同步移除该评论。", async () => {
+                            confirmDelete("确认删除该评论吗？", "删除后前台详情页会同步移除这条评论。", async () => {
                               await api.adminDeleteComment(row.id);
                               message.success("评论已删除");
                               await loadAll();
@@ -473,15 +540,35 @@ export function AdminPage() {
         width={760}
       >
         <Form form={exhibitForm} layout="vertical">
-          <Form.Item name="name" label="名称"><Input /></Form.Item>
+          <Form.Item name="name" label="名称">
+            <Input />
+          </Form.Item>
           <Row gutter={12}>
-            <Col span={8}><Form.Item name="era" label="年代"><Input /></Form.Item></Col>
-            <Col span={8}><Form.Item name="category" label="类别"><Input /></Form.Item></Col>
-            <Col span={8}><Form.Item name="hall_name" label="展厅"><Input /></Form.Item></Col>
+            <Col span={8}>
+              <Form.Item name="era" label="年代">
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="category" label="类别">
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="hall_name" label="展厅">
+                <Input />
+              </Form.Item>
+            </Col>
           </Row>
-          <Form.Item name="summary" label="摘要"><Input.TextArea rows={3} /></Form.Item>
-          <Form.Item name="detail" label="详情"><Input.TextArea rows={5} /></Form.Item>
-          <Form.Item name="image_url" label="图片地址"><Input /></Form.Item>
+          <Form.Item name="summary" label="摘要">
+            <Input.TextArea rows={3} />
+          </Form.Item>
+          <Form.Item name="detail" label="详情">
+            <Input.TextArea rows={5} />
+          </Form.Item>
+          <Form.Item name="image_url" label="图片地址">
+            <Input />
+          </Form.Item>
         </Form>
       </Modal>
 
@@ -495,15 +582,37 @@ export function AdminPage() {
         width={760}
       >
         <Form form={exhibitionForm} layout="vertical">
-          <Form.Item name="title" label="标题"><Input /></Form.Item>
+          <Form.Item name="title" label="标题">
+            <Input />
+          </Form.Item>
           <Row gutter={12}>
-            <Col span={8}><Form.Item name="location" label="地点"><Input /></Form.Item></Col>
-            <Col span={8}><Form.Item name="status" label="状态"><Select options={[{ value: "展出中" }, { value: "即将开展" }, { value: "已结束" }]} /></Form.Item></Col>
-            <Col span={4}><Form.Item name="start_date" label="开始日期"><DatePicker className="full-width" /></Form.Item></Col>
-            <Col span={4}><Form.Item name="end_date" label="结束日期"><DatePicker className="full-width" /></Form.Item></Col>
+            <Col span={8}>
+              <Form.Item name="location" label="地点">
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="status" label="状态">
+                <Select options={exhibitionStatusOptions.map((value) => ({ value, label: value }))} />
+              </Form.Item>
+            </Col>
+            <Col span={4}>
+              <Form.Item name="start_date" label="开始日期">
+                <DatePicker className="full-width" />
+              </Form.Item>
+            </Col>
+            <Col span={4}>
+              <Form.Item name="end_date" label="结束日期">
+                <DatePicker className="full-width" />
+              </Form.Item>
+            </Col>
           </Row>
-          <Form.Item name="summary" label="简介"><Input.TextArea rows={4} /></Form.Item>
-          <Form.Item name="poster_url" label="海报地址"><Input /></Form.Item>
+          <Form.Item name="summary" label="简介">
+            <Input.TextArea rows={4} />
+          </Form.Item>
+          <Form.Item name="poster_url" label="海报地址">
+            <Input />
+          </Form.Item>
         </Form>
       </Modal>
 
@@ -516,9 +625,15 @@ export function AdminPage() {
         cancelText="取消"
       >
         <Form form={announcementForm} layout="vertical" initialValues={{ pinned: false }}>
-          <Form.Item name="title" label="标题"><Input /></Form.Item>
-          <Form.Item name="content" label="内容"><Input.TextArea rows={5} /></Form.Item>
-          <Form.Item name="pinned" label="置顶显示" valuePropName="checked"><Switch /></Form.Item>
+          <Form.Item name="title" label="标题">
+            <Input />
+          </Form.Item>
+          <Form.Item name="content" label="内容">
+            <Input.TextArea rows={5} />
+          </Form.Item>
+          <Form.Item name="pinned" label="是否置顶" valuePropName="checked">
+            <Switch />
+          </Form.Item>
         </Form>
       </Modal>
     </div>

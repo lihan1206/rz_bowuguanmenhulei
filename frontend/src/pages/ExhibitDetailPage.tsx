@@ -1,4 +1,4 @@
-import { DeleteOutlined, EnvironmentOutlined, MessageOutlined } from "@ant-design/icons";
+import { DeleteOutlined, EnvironmentOutlined, MessageOutlined, RollbackOutlined } from "@ant-design/icons";
 import { App, Button, Card, Empty, Form, Input, List, Skeleton, Space, Tag, Typography } from "antd";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
@@ -9,6 +9,7 @@ import { pickErrorMsg } from "../api/client";
 import { api } from "../api/services";
 import type { ExhibitDetail } from "../api/types";
 import { useAuth } from "../store/auth";
+import { excerpt, statusColor } from "../utils/museum";
 
 const commentSchema = z.object({
   content: z.string().min(4, "评论至少 4 个字").max(280, "评论最多 280 个字"),
@@ -64,7 +65,7 @@ export function ExhibitDetailPage() {
   function removeComment(commentId: number) {
     modal.confirm({
       title: "确认删除这条评论吗？",
-      content: "删除后将无法恢复，请再次确认。",
+      content: "删除后无法恢复，请再次确认。",
       okText: "确认删除",
       cancelText: "先保留",
       okButtonProps: { danger: true },
@@ -91,7 +92,13 @@ export function ExhibitDetailPage() {
   if (!data) {
     return (
       <div className="page-wrap">
-        <Empty description="展品信息不存在或已下线" />
+        <Card className="soft-card">
+          <Empty description="展品信息不存在或已下线">
+            <Button type="primary" onClick={() => navigate("/exhibits")}>
+              返回展品列表
+            </Button>
+          </Empty>
+        </Card>
       </div>
     );
   }
@@ -101,8 +108,8 @@ export function ExhibitDetailPage() {
       <Card className="soft-card detail-card">
         <div className="detail-grid">
           <img alt={data.name} src={data.image_url} className="detail-cover" />
-          <div>
-            <Space wrap>
+          <div className="detail-copy">
+            <Space wrap className="card-tags">
               <Tag color="gold">{data.category}</Tag>
               <Tag>{data.era}</Tag>
               <Tag color="cyan">{data.comments_count} 条评论</Tag>
@@ -116,22 +123,27 @@ export function ExhibitDetailPage() {
             </Space>
             <div className="detail-actions">
               <Button type="primary" onClick={() => navigate("/visits")}>
-                预约到馆参观
+                预约参观
+              </Button>
+              <Button icon={<RollbackOutlined />} onClick={() => navigate(-1)}>
+                返回
               </Button>
             </div>
           </div>
         </div>
       </Card>
 
-      <Card className="soft-card">
+      <Card className="soft-card section-card">
         <div className="section-head">
-          <Typography.Title level={3}>观众评论</Typography.Title>
-          <Typography.Text type="secondary">登录后可发布与删除自己的评论</Typography.Text>
+          <div>
+            <Typography.Title level={3}>观众评论</Typography.Title>
+            <Typography.Text type="secondary">登录后可以发布或删除自己的评论，管理员也可以直接管理。</Typography.Text>
+          </div>
         </div>
         {user ? (
           <Form form={form} layout="vertical" className="comment-form">
             <Form.Item label="评论内容" name="content">
-              <Input.TextArea rows={4} maxLength={280} placeholder="请用中文填写你的参观感受" />
+              <Input.TextArea rows={4} maxLength={280} placeholder={`围绕 ${excerpt(data.name, 16)} 说说你的感受`} />
             </Form.Item>
             <Button type="primary" icon={<MessageOutlined />} loading={submitting} onClick={submitComment}>
               发布评论
@@ -139,12 +151,15 @@ export function ExhibitDetailPage() {
           </Form>
         ) : (
           <Card className="muted-box">
-            登录后可发表评论。<Button type="link" onClick={() => navigate("/auth")}>去登录</Button>
+            登录后可发布评论。
+            <Button type="link" onClick={() => navigate("/auth")}>
+              去登录
+            </Button>
           </Card>
         )}
 
         <List
-          locale={{ emptyText: "还没有评论，欢迎成为第一位留言的观众" }}
+          locale={{ emptyText: "还没有评论，欢迎写下你的第一条观展感受。" }}
           dataSource={data.comments}
           renderItem={(item) => (
             <List.Item
@@ -162,9 +177,8 @@ export function ExhibitDetailPage() {
                 title={
                   <Space wrap>
                     <Typography.Text strong>{item.user.display_name}</Typography.Text>
-                    <Typography.Text type="secondary">
-                      {dayjs(item.created_at).format("YYYY-MM-DD HH:mm")}
-                    </Typography.Text>
+                    <Tag color={statusColor(item.status)}>{item.status}</Tag>
+                    <Typography.Text type="secondary">{dayjs(item.created_at).format("YYYY-MM-DD HH:mm")}</Typography.Text>
                   </Space>
                 }
                 description={item.content}

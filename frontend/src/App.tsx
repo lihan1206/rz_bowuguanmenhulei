@@ -1,4 +1,4 @@
-import { App as AntApp, ConfigProvider, Spin, theme } from "antd";
+import { App as AntApp, ConfigProvider, Result, Spin, theme } from "antd";
 import zhCN from "antd/locale/zh_CN";
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
@@ -21,6 +21,19 @@ const VisitsPage = lazy(() => import("./pages/VisitsPage").then((module) => ({ d
 const AuthPage = lazy(() => import("./pages/AuthPage").then((module) => ({ default: module.AuthPage })));
 const AdminPage = lazy(() => import("./pages/AdminPage").then((module) => ({ default: module.AdminPage })));
 
+function RouteFallback() {
+  return (
+    <div className="app-loading">
+      <Result
+        status="info"
+        title="页面加载中"
+        subTitle="正在准备馆藏数据与页面资源，请稍候。"
+        icon={<Spin size="large" />}
+      />
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <ConfigProvider
@@ -28,13 +41,25 @@ export default function App() {
       theme={{
         algorithm: theme.defaultAlgorithm,
         token: {
-          colorPrimary: "#0e7490",
-          colorInfo: "#0e7490",
+          colorPrimary: "#0f766e",
+          colorInfo: "#0f766e",
           colorSuccess: "#15803d",
-          colorWarning: "#d97706",
-          colorError: "#dc2626",
+          colorWarning: "#ca8a04",
+          colorError: "#b91c1c",
           borderRadius: 18,
-          fontFamily: '"HarmonyOS Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
+          fontFamily: '"PingFang SC", "Microsoft YaHei", "HarmonyOS Sans SC", sans-serif',
+        },
+        components: {
+          Layout: {
+            headerBg: "transparent",
+            bodyBg: "transparent",
+          },
+          Card: {
+            borderRadiusLG: 24,
+          },
+          Button: {
+            borderRadiusLG: 999,
+          },
         },
       }}
     >
@@ -42,7 +67,7 @@ export default function App() {
         <AuthProvider>
           <ErrorBoundary>
             <BrowserRouter>
-              <Suspense fallback={<div className="app-loading"><Spin size="large" tip="页面加载中" /></div>}>
+              <Suspense fallback={<RouteFallback />}>
                 <Routes>
                   <Route path="/auth" element={<AuthPage />} />
                   <Route path="/" element={<AppShell />}>

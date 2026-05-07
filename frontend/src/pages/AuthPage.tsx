@@ -1,5 +1,5 @@
-import { App, Button, Card, Form, Input, Tabs, Typography } from "antd";
-import { useNavigate } from "react-router-dom";
+import { App, Button, Card, Form, Input, Space, Tabs, Typography } from "antd";
+import { useLocation, useNavigate } from "react-router-dom";
 import { z } from "zod";
 
 import { pickErrorMsg } from "../api/client";
@@ -21,6 +21,7 @@ const registerSchema = z.object({
 export function AuthPage() {
   const { message } = App.useApp();
   const navigate = useNavigate();
+  const location = useLocation();
   const { setUser } = useAuth();
   const [loginForm] = Form.useForm();
   const [registerForm] = Form.useForm();
@@ -31,7 +32,8 @@ export function AuthPage() {
       const user = await api.login(payload);
       setUser(user);
       message.success("登录成功");
-      navigate("/");
+      const from = (location.state as { from?: string } | null)?.from ?? "/";
+      navigate(from);
     } catch (error) {
       message.error(pickErrorMsg(error));
     }
@@ -53,9 +55,26 @@ export function AuthPage() {
 
   return (
     <div className="auth-page">
+      <div className="auth-hero">
+        <Typography.Title level={1}>博物馆门户系统</Typography.Title>
+        <Typography.Paragraph>
+          登录后你可以评论展品、预约参观，并在管理后台维护展览与公告内容。
+        </Typography.Paragraph>
+        <Space wrap>
+          <Card className="mini-metric">
+            <strong>展品浏览</strong>
+            <span>随时查看重点馆藏</span>
+          </Card>
+          <Card className="mini-metric">
+            <strong>预约参观</strong>
+            <span>在线提交到馆计划</span>
+          </Card>
+        </Space>
+      </div>
+
       <Card className="auth-card">
-        <Typography.Title level={1} className="auth-title">
-          博物馆门户
+        <Typography.Title level={2} className="auth-title">
+          账号登录
         </Typography.Title>
         <Typography.Paragraph type="secondary" style={{ textAlign: "center" }}>
           管理员账号：admin@museumportal.com

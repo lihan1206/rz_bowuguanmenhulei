@@ -99,4 +99,3 @@ export interface AdminCommentItem {
   exhibit_id: number;
   user_id: number;
 }
-

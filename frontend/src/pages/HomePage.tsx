@@ -1,11 +1,17 @@
-import { ArrowRightOutlined, CalendarOutlined, EnvironmentOutlined, SearchOutlined } from "@ant-design/icons";
-import { Button, Card, Col, Input, List, Row, Skeleton, Space, Tag, Typography } from "antd";
-import dayjs from "dayjs";
+import {
+  ArrowRightOutlined,
+  CalendarOutlined,
+  EnvironmentOutlined,
+  SearchOutlined,
+  SoundOutlined,
+} from "@ant-design/icons";
+import { Button, Card, Col, Input, List, Row, Skeleton, Space, Statistic, Tag, Typography } from "antd";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { api } from "../api/services";
 import type { HomePayload } from "../api/types";
+import { excerpt, formatDateRange, statusColor } from "../utils/museum";
 
 export function HomePage() {
   const navigate = useNavigate();
@@ -17,7 +23,7 @@ export function HomePage() {
     (async () => {
       try {
         setData(await api.home());
-      } catch (error) {
+      } catch {
         setData(null);
       } finally {
         setLoading(false);
@@ -28,7 +34,7 @@ export function HomePage() {
   if (loading) {
     return (
       <div className="page-wrap">
-        <Skeleton active paragraph={{ rows: 8 }} />
+        <Skeleton active paragraph={{ rows: 10 }} />
       </div>
     );
   }
@@ -41,49 +47,62 @@ export function HomePage() {
     );
   }
 
+  const nextExhibition = data.exhibitions[0];
+
   return (
     <div className="page-wrap">
       <section className="hero-banner">
-        <div>
-          <Typography.Title level={1}>博物馆门户类软件</Typography.Title>
-          <Typography.Paragraph>
-            汇聚展品、展览、参观指南与预约服务，让公众用更轻松的方式走进真实的馆藏与展陈。
+        <div className="hero-copy">
+          <Space align="center" className="hero-kicker">
+            <SoundOutlined />
+            <span>数字博物馆门户</span>
+          </Space>
+          <Typography.Title level={1}>用更轻松的方式走进馆藏与展览</Typography.Title>
+          <Typography.Paragraph className="hero-lead">
+            我们把展品浏览、展览信息、参观指南和在线预约统一在一起，让参观者可以更快找到重点内容，也让后台维护更顺手。
           </Typography.Paragraph>
           <Space wrap>
             <Button type="primary" size="large" onClick={() => navigate("/visits")}>
-              立即预约
+              立即预约参观
             </Button>
             <Button size="large" onClick={() => navigate("/exhibitions")}>
               查看近期展览
             </Button>
           </Space>
         </div>
-        <div className="hero-search">
-          <Typography.Title level={4}>馆内快速搜索</Typography.Title>
+
+        <div className="hero-panel">
+          <Typography.Text type="secondary">馆内快速搜索</Typography.Text>
           <Input
             size="large"
             value={keyword}
             prefix={<SearchOutlined />}
-            placeholder="搜索展品名称、年代或展厅"
+            placeholder="输入展品名称、年代或展厅"
             onChange={(event) => setKeyword(event.target.value)}
             onPressEnter={() => navigate(`/exhibits?q=${encodeURIComponent(keyword)}`)}
           />
           <div className="stats-strip">
-            <div>
-              <strong>{data.total_exhibits}</strong>
-              <span>馆藏展品</span>
-            </div>
-            <div>
-              <strong>{data.total_exhibitions}</strong>
-              <span>在档展览</span>
-            </div>
+            <Statistic title="馆藏展品" value={data.total_exhibits} />
+            <Statistic title="在展展览" value={data.total_exhibitions} />
           </div>
+          {nextExhibition ? (
+            <div className="hero-note">
+              <Tag color={statusColor(nextExhibition.status)}>{nextExhibition.status}</Tag>
+              <Typography.Title level={5}>{nextExhibition.title}</Typography.Title>
+              <Typography.Paragraph type="secondary">
+                {formatDateRange(nextExhibition.start_date, nextExhibition.end_date)}
+              </Typography.Paragraph>
+            </div>
+          ) : null}
         </div>
       </section>
 
       <section className="block-section">
         <div className="section-head">
-          <Typography.Title level={3}>推荐展品</Typography.Title>
+          <div>
+            <Typography.Title level={3}>推荐展品</Typography.Title>
+            <Typography.Text type="secondary">从最新录入的藏品中挑选了几件适合先看的重点展品。</Typography.Text>
+          </div>
           <Button type="link" onClick={() => navigate("/exhibits")}>
             查看全部 <ArrowRightOutlined />
           </Button>
@@ -97,12 +116,12 @@ export function HomePage() {
                 cover={<img alt={item.name} src={item.image_url} className="cover-img" />}
                 onClick={() => navigate(`/exhibits/${item.id}`)}
               >
-                <Space wrap>
+                <Space wrap className="card-tags">
                   <Tag color="gold">{item.category}</Tag>
                   <Tag>{item.era}</Tag>
                 </Space>
                 <Typography.Title level={5}>{item.name}</Typography.Title>
-                <Typography.Paragraph className="clamp-3">{item.summary}</Typography.Paragraph>
+                <Typography.Paragraph className="clamp-3">{excerpt(item.summary, 120)}</Typography.Paragraph>
                 <Space className="meta-line">
                   <EnvironmentOutlined />
                   <span>{item.hall_name}</span>
@@ -116,9 +135,12 @@ export function HomePage() {
       <section className="block-section">
         <Row gutter={[20, 20]}>
           <Col xs={24} lg={14}>
-            <Card className="soft-card">
+            <Card className="soft-card section-card">
               <div className="section-head">
-                <Typography.Title level={3}>近期展览</Typography.Title>
+                <div>
+                  <Typography.Title level={3}>近期展览</Typography.Title>
+                  <Typography.Text type="secondary">查看当前和即将开展的专题展览，快速掌握时间与地点。</Typography.Text>
+                </div>
                 <Button type="link" onClick={() => navigate("/exhibitions")}>
                   进入展览页 <ArrowRightOutlined />
                 </Button>
@@ -130,16 +152,17 @@ export function HomePage() {
                     <img alt={item.title} src={item.poster_url} className="poster-thumb" />
                     <div className="expo-copy">
                       <Space wrap>
-                        <Tag color={item.status === "展出中" ? "green" : "blue"}>{item.status}</Tag>
-                        <span>{item.location}</span>
+                        <Tag color={statusColor(item.status)}>{item.status}</Tag>
+                        <Space className="meta-line">
+                          <EnvironmentOutlined />
+                          <span>{item.location}</span>
+                        </Space>
                       </Space>
                       <Typography.Title level={5}>{item.title}</Typography.Title>
                       <Typography.Paragraph className="clamp-2">{item.summary}</Typography.Paragraph>
                       <Space className="meta-line">
                         <CalendarOutlined />
-                        <span>
-                          {dayjs(item.start_date).format("YYYY.MM.DD")} - {dayjs(item.end_date).format("YYYY.MM.DD")}
-                        </span>
+                        <span>{formatDateRange(item.start_date, item.end_date)}</span>
                       </Space>
                     </div>
                   </List.Item>
@@ -147,19 +170,25 @@ export function HomePage() {
               />
             </Card>
           </Col>
+
           <Col xs={24} lg={10}>
             <Card className="soft-card notice-card">
-              <Typography.Title level={3}>公告与参观提醒</Typography.Title>
+              <div className="section-head">
+                <div>
+                  <Typography.Title level={3}>公告与提示</Typography.Title>
+                  <Typography.Text type="secondary">重要信息会优先置顶，方便你在来馆前快速确认。</Typography.Text>
+                </div>
+              </div>
               <List
                 dataSource={data.announcements}
                 renderItem={(item) => (
                   <List.Item>
-                    <div>
+                    <div className="announcement-item">
                       <Space wrap>
                         {item.pinned ? <Tag color="red">置顶</Tag> : null}
                         <Typography.Text strong>{item.title}</Typography.Text>
                       </Space>
-                      <Typography.Paragraph className="clamp-2">{item.content}</Typography.Paragraph>
+                      <Typography.Paragraph className="clamp-2">{excerpt(item.content, 150)}</Typography.Paragraph>
                     </div>
                   </List.Item>
                 )}
@@ -169,7 +198,7 @@ export function HomePage() {
                 <p>{data.guide.open_hours}</p>
                 <p>{data.guide.address}</p>
                 <Button type="default" onClick={() => navigate("/guide")}>
-                  查看完整指南
+                  查看完整导览
                 </Button>
               </div>
             </Card>

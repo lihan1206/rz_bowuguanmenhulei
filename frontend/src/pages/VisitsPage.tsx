@@ -1,13 +1,15 @@
-import { CalendarOutlined, DeleteOutlined } from "@ant-design/icons";
-import { App, Button, Card, Col, DatePicker, Empty, Form, Input, InputNumber, List, Row, Skeleton, Space, Typography } from "antd";
+import { CalendarOutlined, DeleteOutlined, SafetyCertificateOutlined } from "@ant-design/icons";
+import { App, Button, Card, Col, DatePicker, Empty, Form, Input, InputNumber, List, Row, Skeleton, Space, Tag, Typography } from "antd";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 
 import { pickErrorMsg } from "../api/client";
 import { api } from "../api/services";
 import type { VisitItem } from "../api/types";
 import { useAuth } from "../store/auth";
+import { formatDate, visitStatusColor } from "../utils/museum";
 
 const visitSchema = z.object({
   visitor_name: z.string().min(2, "姓名至少 2 个字").max(80, "姓名过长"),
@@ -19,6 +21,7 @@ const visitSchema = z.object({
 
 export function VisitsPage() {
   const { message, modal } = App.useApp();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(true);
@@ -56,6 +59,7 @@ export function VisitsPage() {
       });
       message.success("预约提交成功");
       form.resetFields();
+      form.setFieldsValue({ party_size: 1 });
       await loadVisits();
     } catch (error) {
       message.error(pickErrorMsg(error));
@@ -67,7 +71,7 @@ export function VisitsPage() {
   function removeVisit(id: number) {
     modal.confirm({
       title: "确认取消本次预约吗？",
-      content: "取消后名额将立即释放，如需参观可重新提交新预约。",
+      content: "取消后可以重新提交新的预约。",
       okText: "确认取消",
       cancelText: "继续保留",
       okButtonProps: { danger: true },
@@ -88,7 +92,10 @@ export function VisitsPage() {
       <div className="page-wrap">
         <Card className="soft-card">
           <Typography.Title level={3}>预约参观</Typography.Title>
-          <Typography.Paragraph>请先登录，再填写预约信息与到馆日期。</Typography.Paragraph>
+          <Typography.Paragraph>请先登录后再填写预约信息与到馆日期。</Typography.Paragraph>
+          <Button type="primary" onClick={() => navigate("/auth")}>
+            去登录
+          </Button>
         </Card>
       </div>
     );
@@ -96,6 +103,16 @@ export function VisitsPage() {
 
   return (
     <div className="page-wrap">
+      <div className="page-banner">
+        <div className="banner-copy">
+          <Typography.Title level={2}>预约参观</Typography.Title>
+          <Typography.Paragraph>填写基本信息后即可提交预约，后续可在这里查看和取消自己的预约记录。</Typography.Paragraph>
+        </div>
+        <Tag color="blue" icon={<SafetyCertificateOutlined />}>
+          当前登录：{user.display_name}
+        </Tag>
+      </div>
+
       <Row gutter={[20, 20]}>
         <Col xs={24} lg={10}>
           <Card className="soft-card" title="在线预约">
@@ -104,7 +121,7 @@ export function VisitsPage() {
                 <Input placeholder="请输入真实姓名" />
               </Form.Item>
               <Form.Item name="phone" label="联系电话">
-                <Input placeholder="请输入手机号码" />
+                <Input placeholder="请输入手机号" />
               </Form.Item>
               <Form.Item name="visit_date" label="预约日期">
                 <DatePicker className="full-width" disabledDate={(current) => current.isBefore(dayjs().startOf("day"))} />
@@ -113,7 +130,7 @@ export function VisitsPage() {
                 <InputNumber className="full-width" min={1} max={6} />
               </Form.Item>
               <Form.Item name="note" label="补充说明">
-                <Input.TextArea rows={4} placeholder="如有老人、儿童同行或无障碍需求，可在此说明" />
+                <Input.TextArea rows={4} placeholder="如有老人、儿童同行或其他特别需求可在此说明" />
               </Form.Item>
               <Button type="primary" icon={<CalendarOutlined />} block loading={saving} onClick={submitVisit}>
                 提交预约
@@ -121,6 +138,7 @@ export function VisitsPage() {
             </Form>
           </Card>
         </Col>
+
         <Col xs={24} lg={14}>
           <Card className="soft-card" title="我的预约记录">
             {loading ? (
@@ -142,12 +160,13 @@ export function VisitsPage() {
                       title={
                         <Space wrap>
                           <Typography.Text strong>{item.visitor_name}</Typography.Text>
-                          <Typography.Text type="secondary">{item.status}</Typography.Text>
+                          <Tag color={visitStatusColor(item.status)}>{item.status}</Tag>
+                          <Typography.Text type="secondary">{formatDate(item.created_at, "YYYY-MM-DD HH:mm")}</Typography.Text>
                         </Space>
                       }
                       description={
                         <>
-                          <div>到馆日期：{dayjs(item.visit_date).format("YYYY年MM月DD日")}</div>
+                          <div>到馆日期：{formatDate(item.visit_date, "YYYY年MM月DD日")}</div>
                           <div>同行人数：{item.party_size} 人</div>
                           <div>联系电话：{item.phone}</div>
                           {item.note ? <div>备注：{item.note}</div> : null}
@@ -164,4 +183,3 @@ export function VisitsPage() {
     </div>
   );
 }
-

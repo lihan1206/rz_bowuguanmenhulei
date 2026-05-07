@@ -1,4 +1,4 @@
-import { Result, Button } from "antd";
+import { Button, Result } from "antd";
 import type { ReactNode } from "react";
 import { Component } from "react";
 
@@ -24,7 +24,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <Result
             status="500"
             title="页面出现异常"
-            subTitle="请刷新页面后重试，系统已拦截本次异常。"
+            subTitle="我们已经拦截了这次错误，你可以刷新页面重试。"
             extra={
               <Button type="primary" onClick={() => window.location.reload()}>
                 重新加载
@@ -37,4 +37,3 @@ export class ErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
-
